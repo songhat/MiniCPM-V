@@ -25,11 +25,11 @@ import modelscope_studio as mgr
 
 # Argparser
 parser = argparse.ArgumentParser(description='demo')
-parser.add_argument('--model', type=str , default="openbmb/MiniCPM-o-2_6", help="huggingface model name or local path")
+parser.add_argument('--model', type=str , default=r"D:\all_codes\VLM\MiniCPM-V-4_5", help="huggingface model name or local path")
 parser.add_argument('--multi-gpus', action='store_true', default=False, help='use multi-gpus')
 args = parser.parse_args()
 device = "cuda"
-model_name = 'MiniCPM-o 2.6'
+model_name = 'MMiniCPM-V-4_5'
 
 # Load model
 model_path = args.model
@@ -58,7 +58,8 @@ if args.multi_gpus:
 
     model = load_checkpoint_and_dispatch(model, model_path, dtype=torch.bfloat16, device_map=device_map)
 else:
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.bfloat16, init_audio=False, init_tts=False)
+    # model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.bfloat16, init_audio=False, init_tts=False)
+    model = AutoModel.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.bfloat16)
     model = model.to(device=device)
 
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
@@ -548,5 +549,5 @@ with gr.Blocks(css=css) as demo:
 
 
 # launch
-demo.launch(share=False, debug=True, show_api=False, server_port=8000, server_name="0.0.0.0")
+demo.launch(share=True, debug=True, show_api=False, server_port=8000, server_name="0.0.0.0")
 
