@@ -4,10 +4,10 @@ from transformers import AutoModel, AutoTokenizer
 
 torch.manual_seed(100)
 
-model = AutoModel.from_pretrained(r'D:\all_codes\VLM\MiniCPM-V-4_5', trust_remote_code=True, # or openbmb/MiniCPM-o-2_6
+model = AutoModel.from_pretrained(r'/home/rhs/code_workspace/VLM/MiniCPM-V-4_5', trust_remote_code=True, # or openbmb/MiniCPM-o-2_6
     attn_implementation='sdpa', torch_dtype=torch.bfloat16) # sdpa or flash_attention_2, no eager
 model = model.eval().cuda()
-tokenizer = AutoTokenizer.from_pretrained(r'D:\all_codes\VLM\MiniCPM-V-4_5', trust_remote_code=True) # or openbmb/MiniCPM-o-2_6
+tokenizer = AutoTokenizer.from_pretrained(r'/home/rhs/code_workspace/VLM/MiniCPM-V-4_5', trust_remote_code=True) # or openbmb/MiniCPM-o-2_6
 
 image = Image.open('./assets/minicpmo2_6/show_demo.jpg').convert('RGB')
 

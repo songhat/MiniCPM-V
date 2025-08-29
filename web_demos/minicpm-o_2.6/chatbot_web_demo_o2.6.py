@@ -25,7 +25,7 @@ import modelscope_studio as mgr
 
 # Argparser
 parser = argparse.ArgumentParser(description='demo')
-parser.add_argument('--model', type=str , default=r"D:\all_codes\VLM\MiniCPM-V-4_5", help="huggingface model name or local path")
+parser.add_argument('--model', type=str , default=r"/home/rhs/code_workspace/VLM/MiniCPM-V-4_5", help="huggingface model name or local path")
 parser.add_argument('--multi-gpus', action='store_true', default=False, help='use multi-gpus')
 args = parser.parse_args()
 device = "cuda"
@@ -90,6 +90,14 @@ form_radio = {
     'interactive': True,
     'label': 'Decode Type'
 }
+
+memory_radio = {
+    'choices': ['Long Memory', 'Short Memory'],
+    'value': 'Long Memory',
+    'interactive': True,
+    'label': 'Memory Type'
+}
+
 
 
 def create_component(params, comp='Slider'):
@@ -257,9 +265,13 @@ def count_video_frames(_context):
     return num_frames
 
 
-def respond(_question, _chat_bot, _app_cfg, params_form):
+def respond(_question, _chat_bot, _app_cfg, params_form, memory_form):
     _context = _app_cfg['ctx'].copy()
-    _context.append({'role': 'user', 'content': encode_message(_question)})
+    if memory_form == 'Short Memory' and len(_context) >= 2:
+        print("短记忆模式")
+        _context = _context[:2] + [{'role': 'user', 'content': encode_message(_question)}]
+    else:
+        _context.append({'role': 'user', 'content': encode_message(_question)})
 
     images_cnt = _app_cfg['images_cnt']
     videos_cnt = _app_cfg['videos_cnt']
@@ -288,14 +300,19 @@ def respond(_question, _chat_bot, _app_cfg, params_form):
     if files_cnts[1] + videos_cnt > 0:
         params["max_inp_length"] = 4352 # 4096+256
         params["use_image_id"] = False
+        # 如果视频帧数大于16，则图片不进行slice，否则进行2片slice
         params["max_slice_nums"] = 1 if count_video_frames(_context) > 16 else 2
 
     code, _answer, _, sts = chat("", _context, None, params)
 
     images_cnt += files_cnts[0]
     videos_cnt += files_cnts[1]
-    _context.append({"role": "assistant", "content": [make_text(_answer)]}) 
+    if memory_form == 'Short Memory' and len(_context) > 2:
+        _context = _context[:3] + [{'role': 'user', 'content': encode_message(_question)}]
+    else:
+        _context.append({"role": "assistant", "content": [make_text(_answer)]}) 
     _chat_bot.append((_question, _answer))
+
     if code == 0:
         _app_cfg['ctx']=_context
         _app_cfg['sts']=sts
@@ -395,7 +412,7 @@ def regenerate_button_clicked(_question, _image, _user_message, _assistant_messa
         _app_cfg['videos_cnt'] = videos_cnt
         upload_image_disabled = videos_cnt > 0
         upload_video_disabled = videos_cnt > 0 or images_cnt > 0
-        _question, _chat_bot, _app_cfg = respond(_question, _chat_bot, _app_cfg, params_form)
+        _question, _chat_bot, _app_cfg = respond(_question, _chat_bot, _app_cfg, params_form, memory_form)
         return _question, _image, _user_message, _assistant_message, _chat_bot, _app_cfg
     else: 
         last_message = _chat_bot[-1][0]
@@ -466,6 +483,7 @@ with gr.Blocks(css=css) as demo:
             with gr.Column(scale=1, min_width=300):
                 gr.Markdown(value=introduction)
                 params_form = create_component(form_radio, comp='Radio')
+                memory_form = create_component(memory_radio, comp='Radio')
                 regenerate = create_component({'value': 'Regenerate'}, comp='Button')
                 clear_button = create_component({'value': 'Clear History'}, comp='Button')
 
@@ -479,7 +497,7 @@ with gr.Blocks(css=css) as demo:
 
                     txt_message.submit(
                         respond,
-                        [txt_message, chat_bot, app_session, params_form], 
+                        [txt_message, chat_bot, app_session, params_form, memory_form], 
                         [txt_message, chat_bot, app_session]
                     )
 
