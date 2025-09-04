@@ -1,3 +1,5 @@
 *.bk
 __pycache__
 .DS_Store
+video_list.json
+video_cache/
